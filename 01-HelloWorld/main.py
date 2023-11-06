@@ -9,12 +9,12 @@ from fastapi import FastAPI
 app = FastAPI(description="hello world")
 
 
-@app.get(path="/")
+@app.get(path="/", summary="首页")
 def index():
     return "index"
 
 
-@app.get(path="/hello")
+@app.get(path="/hello", summary="您好")
 def hello():
     return "hello world"
 
