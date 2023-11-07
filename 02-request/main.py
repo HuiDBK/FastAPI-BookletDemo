@@ -42,7 +42,7 @@ def with_header_params(
 
 @app.post("/file_upload/file_params", summary="文件参数demo")
 async def with_file_params(file: UploadFile):
-    return {"filename": file.filename, "file_size": file.size}
+    return {"filename": file.filename, "content_type": file.content_type, "file_size": file.size}
 
 
 @app.get("/users/{user_id}/path_query_params", summary="路径参数+查询字符串参数demo")
