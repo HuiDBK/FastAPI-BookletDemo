@@ -1,3 +1,5 @@
 fastapi==0.101.0
 uvicorn==0.23.2
 python-multipart==0.0.6
+orjson==3.9.10
+ujson==5.8.0
