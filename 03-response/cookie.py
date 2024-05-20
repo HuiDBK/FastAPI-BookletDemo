@@ -1,25 +1,32 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
 # @Author: Hui
-# @Desc: { 模块描述 }
+# @Desc: { 注册登陆demo }
 # @Date: 2023/08/07 16:08
 from datetime import datetime, timedelta
-from typing import Annotated
 
 import uvicorn
 from fastapi import FastAPI, Body, Cookie
 from fastapi.responses import JSONResponse
-from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel, Field
 
-app = FastAPI(description="hello world")
+app = FastAPI(description="注册登陆demo")
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+
+@app.post("/set_cookie")
+def set_cookie_demo(user_id: int = Body(description="用户ID")):
+    resp = JSONResponse(content={"user_id": user_id, "demo": "set_cookie"})
+    max_age = int(timedelta(hours=6).total_seconds())  # cookie 有效期
+    resp.set_cookie(key="user_id", value=str(user_id), max_age=max_age)
+    return resp
+
+
+@app.get("/get_cookie")
+def get_cookie_demo(user_id: int = Cookie(default=0)):
+    print("user_id", user_id)
+    resp = JSONResponse(content={"user_id": user_id, "demo": "get_cookie"})
+    return resp
+
 
 user_infos = [
     {"id": 1, "username": "hui", "password": "123456"},
@@ -28,17 +35,17 @@ user_infos = [
 
 # key user_id value user info and expire_time
 user_session = {
-    # 1: {"user": {"id": 1, "username": "hui"}, "expire_time": datetime.now() + timedelta(days=1)}
+    # 1: {"user": {"id": 1, "username": "hui"}, "expire_time": datetime.now() + timedelta(hours=2)}
 }
 
 
-@app.get(path="/")
+@app.get(path="/index")
 def index():
     return "index"
 
 
-@app.get(path="/hello")
-def hello(user_id: Annotated[int, Cookie()] = None):
+@app.get(path="/users/detail")
+def user_detail(user_id: int = Cookie(default=0)):
     # 登陆认证
     print("user_id", user_id)
 
@@ -58,29 +65,44 @@ def hello(user_id: Annotated[int, Cookie()] = None):
             content={"code": -1, "message": "登陆过期，请重新登陆", "data": {}}
         )
 
-    return JSONResponse(
-        content={"code": 0, "message": "hello world", "data": {}}
-    )
+    return JSONResponse(content=user_info.get("user"))
 
 
 def get_user(username, password):
+    print("user_infos", user_infos)
     for user in user_infos:
         if user.get("username") == username and user.get("password") == password:
-            return user
+            return {"id": user.get("id"), "username": user.get("username")}
 
 
-@app.post(path="/login")
+class LoginModel(BaseModel):
+    username: str = Field(min_length=3, max_length=20, description="用户名")
+    password: str = Field(min_length=6, description="密码")
+
+
+@app.post(path="/users/register")
+def register(user: LoginModel):
+    print("user", user)
+    max_id = max([user.get("id") for user in user_infos]) or 0
+    user_id = max_id + 1
+    register_user = {"id": user_id, **user.model_dump()}
+    user_infos.append(register_user)
+    print("user_infos", user_infos)
+    return JSONResponse(content={"user_id": user_id, "message": "ok"})
+
+
+@app.post(path="/users/login")
 def login(
-        username: str = Body(min_length=3, max_length=20, description="用户名"),
-        password: str = Body(min_length=6, description="密码"),
+        user: LoginModel
 ):
-    user = get_user(username, password)
+    user = get_user(user.username, user.password)
+    print("user", user)
 
     if not user:
         return JSONResponse(content={"code": -1, "message": "用户or密码错误", "data": {}})
 
     # 登陆成功设置cookie
-    resp = JSONResponse(content={"code": 0, "message": "OK", "data": {}})
+    resp = JSONResponse(content={"code": 0, "message": "ok", "data": {}})
     resp.set_cookie(key="user_id", value=user.get("id"), max_age=int(timedelta(days=1).total_seconds()))
 
     # 保存用户session
