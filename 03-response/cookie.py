@@ -6,11 +6,18 @@
 from datetime import datetime, timedelta
 
 import uvicorn
-from fastapi import FastAPI, Body, Cookie
+from fastapi import FastAPI, Body, Cookie, Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
+from starlette.middleware.sessions import SessionMiddleware
 
 app = FastAPI(description="注册登陆demo")
+app.add_middleware(
+    SessionMiddleware,
+    session_cookie="user_id",
+    secret_key="random-secret-key",
+    max_age=int(timedelta(days=1).total_seconds())
+)
 
 
 @app.post("/set_cookie")
@@ -45,8 +52,9 @@ def index():
 
 
 @app.get(path="/users/detail")
-def user_detail(user_id: int = Cookie(default=0)):
+def user_detail(request: Request, user_id: str = Cookie(default=0)):
     # 登陆认证
+    user_id = request.session.get("user_id")
     print("user_id", user_id)
 
     user_info = user_session.get(user_id)
@@ -93,7 +101,7 @@ def register(user: LoginModel):
 
 @app.post(path="/users/login")
 def login(
-        user: LoginModel
+        request: Request, user: LoginModel
 ):
     user = get_user(user.username, user.password)
     print("user", user)
@@ -103,7 +111,8 @@ def login(
 
     # 登陆成功设置cookie
     resp = JSONResponse(content={"code": 0, "message": "ok", "data": {}})
-    resp.set_cookie(key="user_id", value=user.get("id"), max_age=int(timedelta(days=1).total_seconds()))
+    # resp.set_cookie(key="user_id", value=user.get("id"), max_age=int(timedelta(days=1).total_seconds()))
+    request.session["user_id"] = user.get("id")
 
     # 保存用户session
     user_session[user.get("id")] = {"user": user, "expire_time": datetime.now() + timedelta(days=1)}
