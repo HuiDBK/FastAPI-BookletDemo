@@ -111,9 +111,9 @@ async def read_users(page_model: PageModel = Depends(page_parameters)):
 
 
 class UserQueryIn(BaseModel):
-    user_id: int = Path(description="用户ID")
-    name: Optional[str] = Query(default=None, description="姓名")
-    age: Optional[int] = Query(default=None, description="年龄")
+    user_id: int = Field(Path(description="用户ID"))
+    name: Optional[str] = Field(Query(default=None, description="姓名"))
+    age: Optional[int] = Field(Query(default=None, description="年龄"))
 
 
 @app.get("/users/{user_id}/path_query_params", summary="路径参数+查询字符串参数BaseModel的demo")

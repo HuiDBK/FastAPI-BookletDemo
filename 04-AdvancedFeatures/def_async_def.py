@@ -23,12 +23,14 @@ async def startup_event():
     aio_session = aiohttp.ClientSession()
 
 
-async def async_get(url):
-    # async with aio_session.get(url) as resp:
-    #     return resp
-
+async def async_httpx_get(url):
     resp = await aio_client.get(url)
     return resp
+
+
+async def async_aiohttp_get(url):
+    async with aio_session.get(url) as resp:
+        return await resp.text()
 
 
 @app.get("/ping")
@@ -36,28 +38,32 @@ async def ping():
     return "pong"
 
 
-@app.get("/async_route_func_demo")
+@app.get("/async_httpx_get")
 async def async_route_func():
     url = "https://juejin.cn/"
-    resp = await async_get(url)
-    # print("resp", resp)
-    return "async_route_func_demo"
+    resp = await async_httpx_get(url)
+    return resp.text
+
+
+@app.get("/async_aiohttp_get")
+async def async_route_func():
+    url = "https://juejin.cn/"
+    resp_text = await async_aiohttp_get(url)
+    return resp_text
 
 
 @app.get("/async_route_use_sync_io_demo")
 async def async_route_func():
     url = "https://juejin.cn/"
     resp = req_session.get(url)
-    # print("resp", resp)
-    return "async_route_func_demo"
+    return resp.text
 
 
 @app.get("/sync_route_func_demo")
 def sync_route_func():
     url = "https://juejin.cn/"
     resp = req_session.get(url)
-    # print("resp", resp)
-    return "sync_route_func_demo"
+    return resp.text
 
 
 def main():
